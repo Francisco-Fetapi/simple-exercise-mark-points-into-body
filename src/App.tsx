@@ -4,6 +4,7 @@ import {
   Button,
   CssBaseline,
   ThemeProvider,
+  Badge,
 } from "@mui/material";
 import { useState } from "react";
 import "./App.css";
@@ -24,42 +25,73 @@ function App() {
   });
   const [marks, setMarks] = useState<IMarks[]>([]);
   const activeMarks = marks.filter((mark) => mark.active);
+  const inactiveMarks = marks.filter((mark) => !mark.active);
 
   const markWithPoint: DivOnClickHandle = (e) => {
     const [x, y] = [e.clientX, e.clientY];
-    setMarks((prev) => [{ x, y, active: true }, ...prev]);
+    const exists = marks.some((mark) => mark.x === x && mark.y === y);
+    if (!exists) {
+      setMarks((prev) => [{ x, y, active: true }, ...prev]);
+    }
   };
-  function changeTheFirstMark(active: boolean) {
+  function changeMark(active: boolean) {
     setMarks((prev) => {
-      const lastElementInactiveIndex = prev.findIndex(
+      const firstElementInactiveIndex = prev.findIndex(
         (mark) => mark.active === active
       );
-      if (lastElementInactiveIndex !== -1) {
-        const newMarks = [...prev];
-        newMarks[lastElementInactiveIndex].active = !active;
+      if (firstElementInactiveIndex !== -1) {
+        let newMarks = [...prev];
+        const currentMark = newMarks[firstElementInactiveIndex];
+        newMarks = newMarks.filter(
+          (_, key) => key !== firstElementInactiveIndex
+        );
+        newMarks.unshift({ ...currentMark, active: !active });
         return newMarks;
       }
       return prev;
     });
   }
   function redo() {
-    changeTheFirstMark(false);
+    changeMark(false);
   }
   function undo() {
-    changeTheFirstMark(true);
+    changeMark(true);
   }
 
   return (
     <ThemeProvider theme={theme}>
       <div className="App">
         <CssBaseline />
-        <ButtonGroup variant="contained" color="primary" className="btn-group">
-          <Button startIcon={<MdUndo />} onClick={undo}>
-            Desfazer
-          </Button>
-          <Button endIcon={<MdRedo />} onClick={redo}>
-            Refazer
-          </Button>
+        <ButtonGroup
+          variant="contained"
+          color="primary"
+          className="btn-group"
+          sx={{
+            display: "grid",
+            gap: 2,
+            gridTemplateColumns: "auto auto",
+            // boxShadow: "none",
+          }}
+          disableElevation
+        >
+          <Badge badgeContent={activeMarks.length} color="error">
+            <Button
+              disabled={!activeMarks.length}
+              startIcon={<MdUndo />}
+              onClick={undo}
+            >
+              Desfazer
+            </Button>
+          </Badge>
+          <Badge badgeContent={inactiveMarks.length} color="error">
+            <Button
+              disabled={!inactiveMarks.length}
+              endIcon={<MdRedo />}
+              onClick={redo}
+            >
+              Refazer
+            </Button>
+          </Badge>
         </ButtonGroup>
         <div className="container" onClick={markWithPoint}>
           {activeMarks.map(({ x, y }) => (
